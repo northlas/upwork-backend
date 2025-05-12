@@ -1,9 +1,8 @@
 use axum::{routing::post, Router, Json};
 use axum::http::StatusCode;
-use reqwest::header::CONTENT_TYPE;
 use reqwest::Client;
 use std::error::Error;
-use tower_http::cors::{CorsLayer, Any};
+use tower_http::cors::{CorsLayer};
 use shuttle_runtime::SecretStore;
 
 #[shuttle_runtime::main]
@@ -45,7 +44,7 @@ async fn call_gemini_ai_studio(
                 {
                     "parts": [
                         {
-                            "text": format!("paraphrase the following text: {}", prompt),
+                            "text": format!("paraphrase this text and return just the result only without any unimportant explanation : {}", prompt),
                         }
                     ]
                 }
@@ -61,7 +60,7 @@ async fn call_gemini_ai_studio(
             .and_then(|candidate| candidate["content"]["parts"].get(0))
             .and_then(|part| part["text"].as_str())
         {
-            Ok(result.to_string())
+            Ok(result[0..result.len() - 2].to_string())
         } else {
             Err("Invalid response format".into())
         }
