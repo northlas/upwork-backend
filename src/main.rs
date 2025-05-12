@@ -7,6 +7,7 @@ use tower_http::cors::{CorsLayer, Any};
 fn configure_cors() -> CorsLayer {
     CorsLayer::new()
         .allow_origin("https://upwork-frontend-ten.vercel.app".parse::<axum::http::HeaderValue>().unwrap())
+        .allow_origin("http://localhost:4200".parse::<axum::http::HeaderValue>().unwrap())
         .allow_methods(Any)
         .allow_headers(Any)
 }
@@ -44,7 +45,7 @@ async fn call_gemini_ai_studio(
                 {
                     "parts": [
                         {
-                            "text": prompt
+                            "text": format!("paraphrase the following text: {}", prompt),
                         }
                     ]
                 }
