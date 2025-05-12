@@ -3,6 +3,7 @@ use axum::http::StatusCode;
 use reqwest::Client;
 use std::error::Error;
 use tower_http::cors::{CorsLayer, Any};
+use shuttle_runtime::SecretStore;
 
 fn configure_cors() -> CorsLayer {
     CorsLayer::new()
@@ -13,9 +14,11 @@ fn configure_cors() -> CorsLayer {
 }
 
 #[shuttle_runtime::main]
-async fn main() -> shuttle_axum::ShuttleAxum {
+async fn main(
+    #[shuttle_runtime::Secrets] secrets: SecretStore,
+) -> shuttle_axum::ShuttleAxum {
     let router = Router::new()
-        .route("/generate", post(|body: String| async move { generate_text(body).await }))
+        .route("/generate", post(|body: String| async move { generate_text(body, secrets).await }))
         .layer(configure_cors());
 
     Ok(router.into())
@@ -23,8 +26,9 @@ async fn main() -> shuttle_axum::ShuttleAxum {
 
 async fn generate_text(
     body: String,
+    secrets: SecretStore
 ) -> Result<Json<String>, (StatusCode, String)> {
-    match call_gemini_ai_studio(body).await {
+    match call_gemini_ai_studio(body, secrets).await {
         Ok(response) => Ok(Json(response)),
         Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string())),
     }
@@ -32,10 +36,11 @@ async fn generate_text(
 
 async fn call_gemini_ai_studio(
     prompt: String,
+    secrets: SecretStore
 ) -> Result<String, Box<dyn Error>> {
     let client = Client::new();
-    let api_url = std::env::var("GEMINI_API_URL").expect("GEMINI_API_URL environment variable not set");
-    let api_key = std::env::var("GEMINI_API_KEY").expect("GEMINI_API_KEY environment variable not set");
+    let api_url = secrets.get("GEMINI_API_URL").expect("GEMINI_API_URL secret not found");
+    let api_key = secrets.get("GEMINI_API_KEY").expect("GEMINI_API_KEY secret not found");
 
     let response = client
         .post(api_url)
