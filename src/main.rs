@@ -1,25 +1,20 @@
 use axum::{routing::post, Router, Json};
 use axum::http::StatusCode;
+use reqwest::header::CONTENT_TYPE;
 use reqwest::Client;
 use std::error::Error;
 use tower_http::cors::{CorsLayer, Any};
 use shuttle_runtime::SecretStore;
 
-fn configure_cors() -> CorsLayer {
-    CorsLayer::new()
-        .allow_origin("https://upwork-frontend-ten.vercel.app".parse::<axum::http::HeaderValue>().unwrap())
-        .allow_origin("http://localhost:4200".parse::<axum::http::HeaderValue>().unwrap())
-        .allow_methods(Any)
-        .allow_headers(Any)
-}
-
 #[shuttle_runtime::main]
 async fn main(
     #[shuttle_runtime::Secrets] secrets: SecretStore,
 ) -> shuttle_axum::ShuttleAxum {
+    let cors = CorsLayer::very_permissive();
+
     let router = Router::new()
         .route("/generate", post(|body: String| async move { generate_text(body, secrets).await }))
-        .layer(configure_cors());
+        .layer(cors);
 
     Ok(router.into())
 }
